@@ -7,6 +7,9 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,15 +26,17 @@ import com.ondemandcarwash.model.Order;
 import com.ondemandcarwash.model.Ratings;
 import com.ondemandcarwash.model.WashPack;
 import com.ondemandcarwash.model.Washer;
+import com.ondemandcarwash.model.adminAuthResponse;
 import com.ondemandcarwash.repository.AdminRepository;
 import com.ondemandcarwash.repository.RatingRepository;
 import com.ondemandcarwash.repository.WashPackRepository;
 import com.ondemandcarwash.service.AdminService;
 import com.ondemandcarwash.service.RatingService;
 
+
 @RestController
 @RequestMapping("/admin")
-
+@CrossOrigin(origins = "*")
 public class AdminController {
 	
 	@Autowired
@@ -39,6 +44,9 @@ public class AdminController {
 	
 	@Autowired
 	private AdminService adminService;
+	
+	@Autowired
+	private AuthenticationManager  authenticationManager;
 	
 	@Autowired
 	private WashPackRepository washPackRepository;
@@ -54,11 +62,29 @@ public class AdminController {
 	private RestTemplate restTemplate;
 	
 //	
+	// Authenticating admin with email and password.
+	// if details are correct it will display "Successfully Authenticated admin"
+	// Else it will display "Error during  admin Authentication ".
+	@PostMapping("/auth")
+	private ResponseEntity<?> authAdmin(@RequestBody Admin admin){
+		String email = admin.getaEmail();
+		String password = admin.getaPassword();
+		try {
+			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
+				
+		} catch (Exception e) {
+				
+			return ResponseEntity.ok(new adminAuthResponse("Error during  admin Authentication "+ email));
+		}
+		return ResponseEntity.ok(new adminAuthResponse("Successfully Authenticated admin "+ email));
+			
+	}
 	
 	
 	
 	
-	    //ADDING Admin
+	    
+	    // creating admin using addadmin post mapping through /admin/addadmin
 		@PostMapping("/addadmin")
 		public Admin saveAdmin(@RequestBody Admin admin) 
 		{
@@ -66,8 +92,15 @@ public class AdminController {
 				
 		}
 		
+		// Welcome message through /admin/
+		@GetMapping("/")
+		public String message() 
+		{
+			return "Hello! WELCOME to Admin page";
+		}
+		
 
-		//Getting all Admins 
+		//reading all admins using get request through /admin/alladmins
 		@GetMapping("/alladmins")
 		public List<Admin> findAllAdmins()
 		{
@@ -75,7 +108,7 @@ public class AdminController {
 				
 		}
 		
-		//Getting Admin by ID
+		//reading admin by id using get request through /admin/alladmins/any id
 		@GetMapping("/alladmins/{id}")
 		public Optional<Admin> getAdminById(@PathVariable int id)
 		{
@@ -83,7 +116,7 @@ public class AdminController {
 		}
 		
 		
-		//Updating Admin Data by Id
+		//Updating Admin Data by Id with put request through /admin/update/any id
 		@PutMapping("/update/{id}")
 		public ResponseEntity<Object> updateAdmin(@PathVariable int id, @RequestBody Admin admin)
 		{
@@ -92,7 +125,7 @@ public class AdminController {
 			return new ResponseEntity<Object>("Admin information updated successfully with id " +id, HttpStatus.OK);	
 		}
 		
-		// Deleting Admin Data by Id 
+		// Deleting Admin Data by Id through /admin/delete/any id
 		@DeleteMapping("/delete/{id}")
 		public ResponseEntity<Object> deleteAdmin (@PathVariable int id)
 		{	
@@ -103,7 +136,7 @@ public class AdminController {
 		
 // WashPack --------------------------		
 		
-		//adding washpack
+		//adding washpack through /admin/addpack
 		@PostMapping("/addpack")
 		public String savePack(@RequestBody WashPack washpack)
 		{
@@ -112,7 +145,7 @@ public class AdminController {
 		}
 		
 		
-		//Reading all washpacks
+		//Reading all washpacks through /admin/allpacks
 		@GetMapping("/allpacks")
 		public List<WashPack> getAllPack()
 		{
@@ -120,7 +153,7 @@ public class AdminController {
 		}
 		
 		
-		//Reading Washpack by ID
+		//Reading Washpack by ID through /admin/allpacks/any id
 		@GetMapping("/allpacks/{id}")
 		public Optional<WashPack> getPackById(@PathVariable int id)
 		{
@@ -128,7 +161,7 @@ public class AdminController {
 		}
 		
 		
-		//Updating WashPack by Id
+		//Updating WashPack by Id through /admin/packupdate/any id
 		@PutMapping("/packupdate/{id}")
 		public ResponseEntity<Object> updateWashPacks(@PathVariable int id, @RequestBody WashPack washpack)
 		{	
@@ -136,7 +169,7 @@ public class AdminController {
 			return new ResponseEntity<Object>("WashPack updated successfully with id " +id, HttpStatus.OK);	
 		}
 		
-		//Deleting washpack by id
+		//Deleting washpack by id through /admin/deletepack/any id
 		@DeleteMapping("/deletepack/{id}")
 		public String deletePack(@PathVariable int id)
 		{
@@ -146,7 +179,8 @@ public class AdminController {
 		
 		
 // Ratings ---------------------
-		//Adding rating
+		
+		//Adding rating through /admin/addrating
 		@PostMapping("/addrating")
 		public String saveRating(@RequestBody Ratings rating)
 		{
@@ -155,7 +189,7 @@ public class AdminController {
 		}
 		
 		
-		//Reading all ratings
+		//Reading all ratings through /admin/allratings
 		@GetMapping("/allratings")
 		public List<Ratings> getAllRating()
 		{
@@ -163,7 +197,7 @@ public class AdminController {
 		}
 		
 		
-		//Updating Ratings by Id
+		//Updating Ratings by Id through /admin/ratingupdate/any id
 		@PutMapping("/ratingupdate/{id}")
 		public ResponseEntity<Object> updateRating(@PathVariable int id, @RequestBody Ratings rating)
 		{	
@@ -172,7 +206,7 @@ public class AdminController {
 		}
 		
 		
-		//Read Rating By washerId
+		//Read Rating By washerId through /admin/ratings/any id
 		@GetMapping("/ratings/{id}")
 		public Optional<Ratings> getRatingById(@PathVariable int id) 
 		{
@@ -181,7 +215,7 @@ public class AdminController {
 		
 		
 		
-		// Deleting Rating by washerId
+		// Deleting Rating by washerId through /admin/deleterating/any id
 		@DeleteMapping("/deleterating/{id}")
 		public ResponseEntity<Object> deleteRating(@PathVariable int id) 
 		{
@@ -196,7 +230,7 @@ public class AdminController {
 		
 // Customer ------------------------------------------
 		
-		
+	    // Getting all customers through /admin/allcustomers
 		@GetMapping("/allcustomers")
 		public List<Customer> findAllCustomers()
 		{
@@ -207,7 +241,7 @@ public class AdminController {
 		}
 		
 		
-		//Remove Customer By Id
+		//Remove Customer By Id through /admin/removecustomer/any id
 		@DeleteMapping("/removecustomer/{id}")
 		public String removeCustomer(@PathVariable("id") int id) 
 		{
@@ -219,7 +253,7 @@ public class AdminController {
 		
 		
 // Washer ------------------------
-		
+	    // reading all washers through /admin/allwashers
 		@GetMapping("/allwashers")
 		public List<Washer> findAllWashers()
 		{
@@ -231,7 +265,7 @@ public class AdminController {
 		
 		
 
-		//Remove Washer By Id
+		//Remove Washer By Id through /admin/removewasher/any id
 		@DeleteMapping("/removewasher/{id}")
 		public String removeWasher(@PathVariable("id") int id) 
 		{
@@ -244,20 +278,22 @@ public class AdminController {
 		
 // Orders-------------------------------------------------
 		
+		
+	    // Reading all orders through /admin/allorders
 		@GetMapping("/allorders")
 		public String getAllOrder()
 		{
 			return restTemplate.getForObject("http://Order-Service/order/allorders", String.class);
 		}
 		
-		//Reading orders By id
+		//Reading orders By id through /admin/allorders/any id
 		@GetMapping("/allorders/{id}")
 		public Order getOrderById (@PathVariable("id") int id)
 		{
 			return restTemplate.getForObject("http://Order-Service/order/orders/"+id , Order.class);
 		}
 		
-		//Cancel Order By Id
+		//Cancel Order By Id through /admin/removeorder/any id
 		@DeleteMapping("/removeorder/{id}")
 		public String removeOrder(@PathVariable("id") int id) 
 		{
